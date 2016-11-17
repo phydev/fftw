@@ -1,4 +1,4 @@
-!! Copyright (C) 2015 M. Moreira
+!! Copyright (C) 2016 M. Moreira
 !!
 !! This program is free software; you can redistribute it and/or modify
 !! it under the terms of the GNU General Public License as published by
@@ -25,32 +25,59 @@ module init_m
 
   private
 
-  public :: simul_box_init, space_init, print_header, heaviside
+  public :: wave_function_init, simul_box_init, space_init, print_header, heaviside, ran2
 
   contains
 
+    subroutine wave_function_init(kvec, Lx, Ly, Lz)
 
-    subroutine simul_box_init(cell, lxyz, lxyz_inv, Lsize, np)
+      implicit none
+      real, allocatable, intent(inout) :: kvec(:,:)
+      integer(4), intent(in) ::  Lx, Ly, Lz
+      integer :: i,j,k
+      ALLOCATE(kvec(0:max(Lx,Ly,Lz),1:3))
+      do i=0, Lx/2
+        kvec(i,1) = 2*M_PI*i/Lx
+        kvec(Lx-i,1) = -2*M_PI*i/Lx
+      end do
+
+      do j=0, Ly/2
+        kvec(j,2) = 2*M_PI*j/Ly
+        kvec(Ly-j,2) = -2*M_PI*j/Ly
+      end do
+
+      do k=0, Lz/2
+        kvec(k,3) = 2*M_PI*k/Lz
+        kvec(Lz-k,3) = -2*M_PI*k/Lz
+      end do
+
+
+    end subroutine wave_function_init
+
+    subroutine simul_box_init(rho, lxyz, lxyz_inv, Lsize, np)
 
       implicit none
 
       ! input variables
-      type(mesh_t), allocatable, intent(inout) :: cell(:)
-
+      !type(C_DOUBLE), allocatable, intent(inout) :: rho(:)
+      real, allocatable, intent(inout) :: rho(:)
       integer, allocatable, intent(in) :: lxyz(:,:), lxyz_inv(:,:,:)
-      integer, intent(in) ::np, Lsize(3)
+      integer, intent(in) ::np
+      integer(4), intent(in) :: Lsize(3)
       ! internal only
       integer ::  ip, i, j, k
-
-      cell(:)%phi = 0.d8
-      do ip = 1, np
+      iseed = -92999384
+      rho(:) = 0.d8
+      do ip = 0, np-1
 
          i = lxyz(ip,1)
          j = lxyz(ip,2)
          k = lxyz(ip,3)
 
          if(sqrt(real(i)**2 + real(j)**2 + real(k)**2) .le. 5.d0) then
-           cell(ip)%phi = 1.d0
+           rho(ip) = 1.d0
+         else
+           rho(ip) = ran2(iseed)
          end if
 
 
@@ -65,7 +92,8 @@ module init_m
       implicit none
 
       ! input/output variables
-      integer, intent(in) ::  Lsize(1:3), boundary_points, np
+      integer, intent(in) ::  boundary_points, np
+      integer(4), intent(in) :: Lsize(3)
       integer, allocatable, intent(inout) :: lxyz(:,:), lxyz_inv(:,:,:)
       ! internal variables
       integer :: i, j, k, l, m, n, ip, ip_part
@@ -82,13 +110,15 @@ module init_m
          do j=-Lsize(2), Lsize(2)-1
             do k=-Lsize(3), Lsize(3)-1
 
-               ip = ip + 1
+
 
                lxyz(ip,1) = i
                lxyz(ip,2) = j
                lxyz(ip,3) = k
 
                lxyz_inv(i,j,k) = ip
+
+               ip = ip + 1
 
             end do
          end do
@@ -158,7 +188,7 @@ module init_m
     subroutine print_header(Lsize, sim_id)
 
       implicit none
-      integer, intent(in) :: Lsize(1:3)
+      integer(4), intent(in) :: Lsize(3)
       character(3),intent(in)  :: sim_id
       character(len=255) :: cwd, hostname
       character(len=32) :: username
@@ -212,6 +242,41 @@ module init_m
          heaviside = 1.d0
       end if
     end function heaviside
+
+    function ran2(idum)
+      integer :: idum,IM1,IM2,IMM1,IA1,IA2,IQ1,IQ2,IR1,IR2,NTAB,NDIV
+      real :: ran2,AM,EPS,RNMX
+      parameter (IM1=2147483563,IM2=2147483399,AM=1./IM1,IMM1=IM1-1, &
+           IA1=40014,IA2=40692,IQ1=53668,IQ2=52774,IR1=12211,IR2=3791, &
+           NTAB=32,NDIV=1+IMM1/NTAB,EPS=1.2e-7,RNMX=1.-EPS)
+      integer :: idum2,j,k,iv(NTAB),iy
+      save iv,iy,idum2
+      data idum2/123456789/, iv/NTAB*0/, iy/0/
+      if (idum.le.0) then
+         idum=max(-idum,1)
+         idum2=idum
+         do 11 j=NTAB+8,1,-1
+
+            k=idum/IQ1
+            idum=IA1*(idum-k*IQ1)-k*IR1
+            if (idum.lt.0) idum=idum+IM1
+            if (j.le.NTAB) iv(j)=idum
+11          continue
+            iy=iv(1)
+         endif
+         k=idum/IQ1
+         idum=IA1*(idum-k*IQ1)-k*IR1
+         if (idum.lt.0) idum=idum+IM1
+         k=idum2/IQ2
+         idum2=IA2*(idum2-k*IQ2)-k*IR2
+         if (idum2.lt.0) idum2=idum2+IM2
+         j=1+iy/NDIV
+         iy=iv(j)-idum2
+         iv(j)=idum
+         if(iy.lt.1)iy=iy+IMM1
+         ran2=min(AM*iy,RNMX)
+         return
+       end function ran2
 
   end module init_m
 

@@ -1,4 +1,4 @@
-!! Copyright (C) 2015 M. Moreira
+!! Copyright (C) 2016 M. Moreira
 !!
 !! This program is free software; you can redistribute it and/or modify
 !! it under the terms of the GNU General Public License as published by
@@ -28,11 +28,22 @@ module global_m
   type mesh_t
      real :: phi, lapl_phi
   end type mesh_t
+    !> some mathematical constants
+    REAL(8), public, parameter :: M_Pi        = 3.1415926535897932384626433832795029
+    REAL(8), public, parameter :: M_E         = 2.7182818284590452353602874713526625
+    REAL(8), public, parameter :: M_TWO       = 2.0
+    REAL(8), public, parameter :: M_THREE     = 3.0
+    REAL(8), public, parameter :: M_FOUR      = 4.0
+    REAL(8), public, parameter :: M_FIVE      = 5.0
+    REAL(8), public, parameter :: M_SIX       = 6.0
+    REAL(8), public, parameter :: M_SEVEN     = 7.0
+    REAL(8), public, parameter :: M_EIGHT     = 8.0
+    REAL(8), public, parameter :: M_NINE      = 9.0
+    REAL(8), public, parameter :: M_TEN       = 10.0
+    REAL(8), public, parameter :: M_HALF      = 0.5
 
-      type(C_PTR) :: plan
-      real(C_DOUBLE), dimension(L,M,N) :: in
-      complex(C_DOUBLE_COMPLEX), dimension(L/2+1,M,N) :: out
       ! begin parameters
+      real, allocatable, public :: kvec(:,:)
       integer, public :: i, j, k
       real, public ::  diffusion_const, interface_width, dt
       integer, public :: tstep, iseed, dr(3)
@@ -41,10 +52,9 @@ module global_m
       character(len=3),public :: sim_id
       ! mesh variables
       integer, public, allocatable :: lxyz(:,:), lxyz_inv(:,:,:)
-      integer, public :: Lsize(1:3), boundary_points
-      integer, public :: np, np_part, ip
+      integer(4), public :: Lsize(1:3), Lx, Ly, Lz
+      integer, public :: np, np_part, np_complex, ip, boundary_points
 
-      type(mesh_t), public, allocatable :: rho(:)
 
       ! misc
       integer, public :: nstep, counter = 0, ndim, output_period, extra_steps
