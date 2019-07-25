@@ -154,7 +154,7 @@ module init_m
 
                if( abs(k)>Lsize(3)-hs(3)) then
                   boundary = .true.
-                  n = SIGN(1,k)*Lsize(3) - hs(3)*SIGN(1,k)
+                  n = k  - SIGN(1,k)*(2*Lsize(3))
                end if
 
 
