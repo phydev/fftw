@@ -159,13 +159,14 @@ module init_m
 
 
                if(boundary) then
-                  ip_part = ip_part + 1
-
+                  
                   lxyz(ip_part,1) = l
                   lxyz(ip_part,2) = m
                   lxyz(ip_part,3) = n
 
                   lxyz_inv(i,j,k) = lxyz_inv(l, m, n)
+                  
+                  ip_part = ip_part + 1
                end if
 
 
